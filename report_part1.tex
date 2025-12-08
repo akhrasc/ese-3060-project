@@ -1,0 +1,99 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+\title{ESE 3060 Final Project -- Part 1\\
+\large Effect of Learning Rate Warmup Ratio on CIFAR-10 Training Speed}
+\author{[Your Name(s)]}
+\date{December 8, 2025}
+
+\begin{document}
+\maketitle
+
+\section{Hypothesis}
+
+We hypothesize that the default learning rate warmup ratio of 23\% in the airbench94 training script is suboptimal. During warmup, the learning rate linearly increases from 20\% to 100\% of the target value. If this warmup period is too long, training steps are ``wasted'' at low learning rates, potentially slowing convergence.
+
+Conversely, if warmup is too short, the optimizer may become unstable due to large gradient updates early in training when weights are randomly initialized. We test warmup ratios ranging from 5\% to 35\% to find the optimal balance between stability and training efficiency.
+
+\section{Method}
+
+\subsection{Experimental Setup}
+\begin{itemize}
+    \item \textbf{Baseline}: airbench94.py with default \texttt{warmup\_ratio = 0.23}
+    \item \textbf{Hardware}: [Specify your GPU, e.g., NVIDIA A100]
+    \item \textbf{Runs per variant}: 25 (for statistical significance)
+    \item \textbf{Metric}: Test accuracy with test-time augmentation (TTA)
+\end{itemize}
+
+\subsection{Warmup Ratios Tested}
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+Variant & Warmup Ratio \\
+\midrule
+V1 & 0.05 (5\%) \\
+V2 & 0.10 (10\%) \\
+V3 & 0.15 (15\%) \\
+V4 & 0.20 (20\%) \\
+\textbf{Baseline} & \textbf{0.23 (23\%)} \\
+V5 & 0.30 (30\%) \\
+V6 & 0.35 (35\%) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Code Changes}
+We modified line 383 of \texttt{airbench94.py} to use a configurable warmup ratio:
+\begin{verbatim}
+warmup_ratio = hyp['opt']['warmup_ratio']  # Now configurable
+warmup_steps = int(total_train_steps * warmup_ratio)
+\end{verbatim}
+
+\section{Results}
+
+% TODO: Replace with your actual results
+\begin{table}[h]
+\centering
+\caption{Experimental Results}
+\begin{tabular}{ccccc}
+\toprule
+Warmup Ratio & Mean Acc (\%) & Std (\%) & Mean Time (s) & Significant? \\
+\midrule
+0.05 & XX.XX & X.XX & X.XX & -- \\
+0.10 & XX.XX & X.XX & X.XX & -- \\
+0.15 & XX.XX & X.XX & X.XX & -- \\
+0.20 & XX.XX & X.XX & X.XX & -- \\
+\textbf{0.23} & \textbf{XX.XX} & \textbf{X.XX} & \textbf{X.XX} & baseline \\
+0.30 & XX.XX & X.XX & X.XX & -- \\
+0.35 & XX.XX & X.XX & X.XX & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% TODO: Uncomment and update path after generating figures
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.9\textwidth]{figures/combined_results.pdf}
+% \caption{Effect of warmup ratio on accuracy (left) and training time (right). Orange bar indicates baseline.}
+% \end{figure}
+
+\section{Conclusion}
+
+% TODO: Fill in based on your results
+[Summarize your findings here. Did reducing warmup help? Did any variant significantly outperform baseline? What does this tell us about the importance of warmup in this training setup?]
+
+\textbf{Key findings:}
+\begin{itemize}
+    \item [Finding 1]
+    \item [Finding 2]
+    \item [Finding 3]
+\end{itemize}
+
+\section{Experiment Logs}
+Full experiment logs are available in the \texttt{logs/} directory of the submitted repository. The analysis script \texttt{analyze\_results.py} reproduces all tables and figures.
+
+\end{document}

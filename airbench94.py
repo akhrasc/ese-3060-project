@@ -6,6 +6,8 @@
 # We recorded the runtime of 3.83 seconds on an NVIDIA A100-SXM4-80GB with the following nvidia-smi:
 # NVIDIA-SMI 515.105.01   Driver Version: 515.105.01   CUDA Version: 11.7
 # torch.__version__ == '2.1.2+cu118'
+#
+# Modified for ESE 3060 Final Project: Added configurable warmup_ratio parameter
 
 #############################################
 #            Setup/Hyperparameters          #
@@ -14,6 +16,7 @@
 import os
 import sys
 import uuid
+import argparse
 from math import ceil
 
 import torch
@@ -46,6 +49,7 @@ hyp = {
         'bias_scaler': 64.0,        # scales up learning rate (but not weight decay) for BatchNorm biases
         'label_smoothing': 0.2,
         'whiten_bias_epochs': 3,    # how many epochs to train the whitening layer bias before freezing
+        'warmup_ratio': 0.23,       # fraction of training steps used for LR warmup (EXPERIMENT PARAMETER)
     },
     'aug': {
         'flip': True,
@@ -380,7 +384,8 @@ def main(run):
     optimizer = torch.optim.SGD(param_configs, momentum=momentum, nesterov=True)
 
     def get_lr(step):
-        warmup_steps = int(total_train_steps * 0.23)
+        warmup_ratio = hyp['opt']['warmup_ratio']  # Use configurable warmup ratio
+        warmup_steps = int(total_train_steps * warmup_ratio)
         warmdown_steps = total_train_steps - warmup_steps
         if step < warmup_steps:
             frac = step / warmup_steps
@@ -464,21 +469,53 @@ def main(run):
     epoch = 'eval'
     print_training_details(locals(), is_final_entry=True)
 
-    return tta_val_acc
+    return tta_val_acc, total_time_seconds
 
 if __name__ == "__main__":
+    # Parse command-line arguments for experiment configuration
+    parser = argparse.ArgumentParser(description='CIFAR-10 Airbench Training with Warmup Ratio Experiment')
+    parser.add_argument('--warmup_ratio', type=float, default=0.23,
+                        help='Fraction of training steps for LR warmup (default: 0.23)')
+    parser.add_argument('--num_runs', type=int, default=25,
+                        help='Number of training runs (default: 25)')
+    args = parser.parse_args()
+    
+    # Set the warmup ratio from command line
+    hyp['opt']['warmup_ratio'] = args.warmup_ratio
+    
     with open(sys.argv[0]) as f:
         code = f.read()
 
+    print(f"\n{'='*60}")
+    print(f"EXPERIMENT: warmup_ratio = {args.warmup_ratio}")
+    print(f"{'='*60}\n")
+    
     print_columns(logging_columns_list, is_head=True)
     #main('warmup')
-    accs = torch.tensor([main(run) for run in range(25)])
-    print('Mean: %.4f    Std: %.4f' % (accs.mean(), accs.std()))
+    results = [main(run) for run in range(args.num_runs)]
+    accs = torch.tensor([r[0] for r in results])
+    times = torch.tensor([r[1] for r in results])
+    print('Mean Acc: %.4f    Std Acc: %.4f' % (accs.mean(), accs.std()))
+    print('Mean Time: %.4f    Std Time: %.4f' % (times.mean(), times.std()))
 
-    log = {'code': code, 'accs': accs}
-    log_dir = os.path.join('logs', str(uuid.uuid4()))
+    # Save log with warmup ratio in filename for easy identification
+    log = {
+        'code': code, 
+        'accs': accs,
+        'times': times,
+        'warmup_ratio': args.warmup_ratio,
+        'num_runs': args.num_runs,
+        'mean_acc': accs.mean().item(),
+        'std_acc': accs.std().item(),
+        'mean_time': times.mean().item(),
+        'std_time': times.std().item(),
+    }
+    log_dir = os.path.join('logs', f'warmup_{args.warmup_ratio}')
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, 'log.pt')
-    print(os.path.abspath(log_path))
-    torch.save(log, os.path.join(log_dir, 'log.pt'))
+    print(f"\nResults saved to: {os.path.abspath(log_path)}")
+    print(f"Warmup Ratio: {args.warmup_ratio}")
+    print(f"Mean Accuracy: {accs.mean().item():.4f} +/- {accs.std().item():.4f}")
+    print(f"Mean Time: {times.mean().item():.4f}s +/- {times.std().item():.4f}s")
+    torch.save(log, log_path)
 
