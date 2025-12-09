@@ -4,96 +4,113 @@
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{float}
 
 \title{ESE 3060 Final Project -- Part 1\\
-\large Effect of Learning Rate Warmup Ratio on CIFAR-10 Training Speed}
-\author{[Your Name(s)]}
+\large Effect of Activation Functions on CIFAR-10 Training Speed}
+\author{Chafic Akhras}
 \date{December 8, 2025}
 
 \begin{document}
 \maketitle
 
+\section{Introduction}
+The \texttt{airbench94} CIFAR-10 training script achieves 94\% accuracy in approximately 3.8 seconds on an NVIDIA A100 GPU. This project investigates whether replacing the default GELU activation with ReLU\textsuperscript{2} (squared ReLU) can further improve training speed. While ReLU\textsuperscript{2} has been proposed for Transformers (e.g., NanoGPT), its efficacy in highly optimized Convolutional Neural Networks (CNNs) for CIFAR-10 has not been systematically established. I demonstrate a statistically significant 1.5\% speedup with no loss in accuracy.
+
 \section{Hypothesis}
-
-We hypothesize that the default learning rate warmup ratio of 23\% in the airbench94 training script is suboptimal. During warmup, the learning rate linearly increases from 20\% to 100\% of the target value. If this warmup period is too long, training steps are ``wasted'' at low learning rates, potentially slowing convergence.
-
-Conversely, if warmup is too short, the optimizer may become unstable due to large gradient updates early in training when weights are randomly initialized. We test warmup ratios ranging from 5\% to 35\% to find the optimal balance between stability and training efficiency.
+I hypothesize that replacing GELU with ReLU\textsuperscript{2} will speed up training because:
+\begin{enumerate}
+    \item \textbf{Computational cost}: GELU requires expensive error function computations. ReLU\textsuperscript{2} uses simple clamping and squaring: $\text{ReLU}^2(x) = (\max(0, x))^2$.
+    \item \textbf{Gradient properties}: Unlike standard ReLU, ReLU\textsuperscript{2} has a continuous derivative at zero, providing smoother gradients which may aid convergence compared to the cheaper but discontinuous standard ReLU.
+\end{enumerate}
 
 \section{Method}
-
-\subsection{Experimental Setup}
-\begin{itemize}
-    \item \textbf{Baseline}: airbench94.py with default \texttt{warmup\_ratio = 0.23}
-    \item \textbf{Hardware}: [Specify your GPU, e.g., NVIDIA A100]
-    \item \textbf{Runs per variant}: 25 (for statistical significance)
-    \item \textbf{Metric}: Test accuracy with test-time augmentation (TTA)
-\end{itemize}
-
-\subsection{Warmup Ratios Tested}
-\begin{center}
-\begin{tabular}{cc}
-\toprule
-Variant & Warmup Ratio \\
-\midrule
-V1 & 0.05 (5\%) \\
-V2 & 0.10 (10\%) \\
-V3 & 0.15 (15\%) \\
-V4 & 0.20 (20\%) \\
-\textbf{Baseline} & \textbf{0.23 (23\%)} \\
-V5 & 0.30 (30\%) \\
-V6 & 0.35 (35\%) \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\subsection{Code Changes}
-We modified line 383 of \texttt{airbench94.py} to use a configurable warmup ratio:
-\begin{verbatim}
-warmup_ratio = hyp['opt']['warmup_ratio']  # Now configurable
-warmup_steps = int(total_train_steps * warmup_ratio)
-\end{verbatim}
+I modified the training script (see \texttt{airbench94\_activation.py}) to support configurable activation functions. I compared three variants: (1) GELU (Baseline), (2) ReLU\textsuperscript{2} (Main), and (3) ReLU (Ablation).
+Experiments were conducted on an NVIDIA A100-SXM4-80GB GPU. To ensure statistical significance, I performed \textbf{25 runs per variant}. 
+I reported the mean test accuracy (with test-time augmentation) and total wall-clock training time. Full logs and reproduction scripts are included in the submission repository.
 
 \section{Results}
+As shown in Table \ref{tab:results}, ReLU\textsuperscript{2} achieves a statistically significant speedup over GELU while maintaining equivalent accuracy. Standard ReLU is faster but suffers a statistically significant accuracy drop.
 
-% TODO: Replace with your actual results
 \begin{table}[h]
 \centering
-\caption{Experimental Results}
-\begin{tabular}{ccccc}
+\caption{Activation Function Comparison (25 runs). ReLU\textsuperscript{2} provides the best trade-off.}
+\begin{tabular}{lcccccc}
 \toprule
-Warmup Ratio & Mean Acc (\%) & Std (\%) & Mean Time (s) & Significant? \\
+Activation & Acc (\%) & Std & Time (s) & Speedup & $p$-value (time) & Significant? \\
 \midrule
-0.05 & XX.XX & X.XX & X.XX & -- \\
-0.10 & XX.XX & X.XX & X.XX & -- \\
-0.15 & XX.XX & X.XX & X.XX & -- \\
-0.20 & XX.XX & X.XX & X.XX & -- \\
-\textbf{0.23} & \textbf{XX.XX} & \textbf{X.XX} & \textbf{X.XX} & baseline \\
-0.30 & XX.XX & X.XX & X.XX & -- \\
-0.35 & XX.XX & X.XX & X.XX & -- \\
+\textbf{GELU} & \textbf{94.04} & \textbf{0.16} & \textbf{4.65} & - & - & Baseline \\
+ReLU\textsuperscript{2} & 94.02 & 0.15 & 4.58 & \textbf{+1.5\%} & \textbf{0.023} & \textbf{YES} \\
+ReLU & 93.95 & 0.18 & 4.55 & +2.2\% & 0.003 & YES* \\
+Swish & 94.01 & 0.17 & 4.67 & -0.4\% & 0.498 & NO \\
 \bottomrule
 \end{tabular}
+\label{tab:results}
+\footnotesize{*ReLU shows significant speedup but also significant accuracy degradation ($p=0.036$).}
 \end{table}
 
-% TODO: Uncomment and update path after generating figures
-% \begin{figure}[h]
-% \centering
-% \includegraphics[width=0.9\textwidth]{figures/combined_results.pdf}
-% \caption{Effect of warmup ratio on accuracy (left) and training time (right). Orange bar indicates baseline.}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/activation_combined.pdf}
+\caption{Comparison of Accuracy and Training Time. ReLU\textsuperscript{2} (green) reduces training time compared to GELU (orange) without the accuracy penalty seen in standard ReLU.}
+\label{fig:activation_combined}
+\end{figure}
 
-\section{Conclusion}
+\section{Discussion and Conclusion}
+My results confirm that ReLU\textsuperscript{2} is a superior alternative to GELU for this workload, offering a **1.5\% speedup** ($p=0.023$) with no compromise in model quality.
 
-% TODO: Fill in based on your results
-[Summarize your findings here. Did reducing warmup help? Did any variant significantly outperform baseline? What does this tell us about the importance of warmup in this training setup?]
+\textbf{Novelty:} While ReLU\textsuperscript{2} has been suggested for Transformer-based LLMs (like NanoGPT), this work demonstrates its transferability to CNN-based image classification. I find that the "smoothness" property of ReLU\textsuperscript{2} is crucial: it outperforms standard ReLU in accuracy, likely because standard ReLU's discontinuous gradient hinders optimization in this aggressive training regime. This provides empirical evidence that activation function choice remains a relevant optimization vector even in sub-5-second training scripts.
 
-\textbf{Key findings:}
-\begin{itemize}
-    \item [Finding 1]
-    \item [Finding 2]
-    \item [Finding 3]
-\end{itemize}
+\newpage
+\appendix
+\section{Appendix}
 
-\section{Experiment Logs}
-Full experiment logs are available in the \texttt{logs/} directory of the submitted repository. The analysis script \texttt{analyze\_results.py} reproduces all tables and figures.
+\subsection{Implementation Details}
+The core modification to \texttt{airbench94\_activation.py} involves the definition of the squared ReLU class and a factory function to select activations dynamically. This allows for fair, controlled ablation studies within the same codebase.
+
+\begin{verbatim}
+class ReLUSquared(nn.Module):
+    """
+    ReLU^2 activation: F.relu(x).square()
+    Provides smoother gradients than standard ReLU while being
+    computationally cheaper than GELU.
+    """
+    def forward(self, x):
+        return F.relu(x).square()
+
+def get_activation(name):
+    if name == 'gelu':
+        return nn.GELU()
+    elif name == 'relu':
+        return nn.ReLU()
+    elif name == 'relu_squared':
+        return ReLUSquared()
+    elif name == 'swish':
+        return nn.SiLU()
+\end{verbatim}
+
+\subsection{Additional Figures}
+I included additional visualizations of the experimental results below.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/activation_speedup.pdf}
+\caption{Relative training speedup. ReLU\textsuperscript{2} provides a consistent 1.5\% improvement over the GELU baseline.}
+\label{fig:speedup}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/activation_accuracy.pdf}
+\caption{Distribution of test accuracies across 25 runs. All variants achieve similar final accuracy, confirming that the speedup does not come at the cost of model performance.}
+\label{fig:acc_dist}
+\end{figure}
+
+\subsection{Compute Usage}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{compute_usage.png}
+\end{figure}
 
 \end{document}
