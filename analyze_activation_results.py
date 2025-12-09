@@ -3,11 +3,7 @@
 ESE 3060 Final Project - Part 1
 Activation Function Experiment Analysis
 
-This script analyzes the results from the activation function experiments,
-creates comparison tables and visualizations.
-
-Usage:
-    python analyze_activation_results.py
+Analyzes results, creates tables and figures.
 """
 
 import os
@@ -33,7 +29,7 @@ ACTIVATION_COLORS = {
 }
 
 def load_results(logs_dir='logs'):
-    """Load all activation experiment results from logs directory."""
+    # Load all activation experiment results from logs directory
     results = {}
     
     for folder in os.listdir(logs_dir):
@@ -57,9 +53,8 @@ def load_results(logs_dir='logs'):
     return {k: results[k] for k in order if k in results}
 
 def print_results_table(results):
-    """Print a formatted results table."""
     print("\n" + "="*100)
-    print("EXPERIMENT RESULTS: Activation Function Ablation Study")
+    print("RESULTS: Activation Function Ablation Study")
     print("="*100)
     print(f"{'Activation':^15} | {'Mean Acc (%)':^15} | {'Std Acc':^10} | {'Mean Time (s)':^15} | {'Std Time':^10} | {'Runs':^6}")
     print("-"*100)
@@ -128,7 +123,6 @@ def statistical_comparison(results, baseline='gelu'):
     return comparisons
 
 def create_figures(results, output_dir='figures'):
-    """Create visualization figures."""
     os.makedirs(output_dir, exist_ok=True)
     
     activations = list(results.keys())
@@ -259,7 +253,6 @@ def create_figures(results, output_dir='figures'):
     plt.close('all')
 
 def export_csv(results, output_path='activation_results.csv'):
-    """Export results to CSV for easy spreadsheet use."""
     with open(output_path, 'w') as f:
         f.write("activation,mean_acc,std_acc,mean_time,std_time,num_runs\n")
         for activation, data in results.items():
@@ -267,9 +260,8 @@ def export_csv(results, output_path='activation_results.csv'):
     print(f"Exported results to: {output_path}")
 
 def print_latex_table(results, comparisons):
-    """Print a LaTeX-formatted table for the report."""
     print("\n" + "="*70)
-    print("LATEX TABLE (copy to report)")
+    print("LATEX TABLE")
     print("="*70)
     print(r"""
 \begin{table}[h]
@@ -333,3 +325,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

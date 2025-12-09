@@ -3,11 +3,7 @@
 ESE 3060 Final Project - Part 1
 Warmup Ratio Experiment Analysis
 
-This script analyzes the results from the warmup ratio experiments,
-creates comparison tables and visualizations.
-
-Usage:
-    python analyze_results.py
+Analyzes results, creates tables and figures.
 """
 
 import os
@@ -17,7 +13,7 @@ import numpy as np
 from scipy import stats
 
 def load_results(logs_dir='logs'):
-    """Load all experiment results from logs directory."""
+    # Load all experiment results from logs directory
     results = {}
     
     for folder in os.listdir(logs_dir):
@@ -39,9 +35,8 @@ def load_results(logs_dir='logs'):
     return dict(sorted(results.items()))
 
 def print_results_table(results):
-    """Print a formatted results table."""
     print("\n" + "="*90)
-    print("EXPERIMENT RESULTS: Warmup Ratio Ablation Study")
+    print("RESULTS: Warmup Ratio Ablation Study")
     print("="*90)
     print(f"{'Warmup Ratio':^15} | {'Mean Acc (%)':^15} | {'Std Acc':^10} | {'Mean Time (s)':^15} | {'Std Time':^10} | {'Runs':^6}")
     print("-"*90)
@@ -62,7 +57,6 @@ def print_results_table(results):
     print()
 
 def statistical_comparison(results, baseline_ratio=0.23):
-    """Perform statistical tests comparing each variant to baseline."""
     if baseline_ratio not in results:
         print("Baseline not found in results!")
         return
@@ -92,7 +86,6 @@ def statistical_comparison(results, baseline_ratio=0.23):
     print()
 
 def create_figures(results, output_dir='figures'):
-    """Create visualization figures."""
     os.makedirs(output_dir, exist_ok=True)
     
     warmup_ratios = list(results.keys())
@@ -184,7 +177,6 @@ def create_figures(results, output_dir='figures'):
     plt.close('all')
 
 def export_csv(results, output_path='results.csv'):
-    """Export results to CSV for easy spreadsheet use."""
     with open(output_path, 'w') as f:
         f.write("warmup_ratio,mean_acc,std_acc,mean_time,std_time,num_runs\n")
         for warmup, data in results.items():
@@ -222,3 +214,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

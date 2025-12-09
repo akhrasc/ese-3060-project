@@ -18,6 +18,27 @@ Install all required packages:
 pip install -r requirements.txt
 ```
 
+## Part 1: Activation Function Speedrun (Reproduction)
+
+To reproduce the activation function results (GELU vs ReLU vs ReLU^2):
+
+1. **Run the experiments:**
+   This script runs 25 trials for each activation function variant.
+   ```bash
+   python run_activation_experiments.py
+   ```
+
+2. **Analyze results:**
+   This script processes the logs and generates the figures found in the report.
+   ```bash
+   python analyze_activation_results.py
+   ```
+
+3. **Output:**
+   - Logs: `logs/activation_*/`
+   - Figures: `figures/`
+   - Summary statistics printed to console
+
 ## Running airbench94.py
 
 ### Overview

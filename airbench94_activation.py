@@ -74,27 +74,11 @@ hyp = {
 #############################################
 
 class ReLUSquared(nn.Module):
-    """ReLU² activation: F.relu(x).square()
-    
-    This activation function combines the sparsity of ReLU with smoother
-    gradients near zero. It has been shown to improve training speed in
-    transformer models while maintaining expressivity.
-    
-    Computational cost: Cheaper than GELU (no error function), 
-    slightly more expensive than ReLU (one extra square operation).
-    """
+    # Squared ReLU: F.relu(x)**2
     def forward(self, x):
         return F.relu(x).square()
 
 def get_activation(name):
-    """Return activation module by name.
-    
-    Args:
-        name: One of 'gelu', 'relu', 'relu_squared', 'swish'
-        
-    Returns:
-        nn.Module: The activation function
-    """
     if name == 'gelu':
         return nn.GELU()
     elif name == 'relu':
@@ -559,3 +543,5 @@ if __name__ == "__main__":
     print(f"Mean Accuracy: {accs.mean().item():.4f} +/- {accs.std().item():.4f}")
     print(f"Mean Time: {times.mean().item():.4f}s +/- {times.std().item():.4f}s")
     torch.save(log, log_path)
+
+

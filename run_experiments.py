@@ -3,11 +3,7 @@
 ESE 3060 Final Project - Part 1
 Warmup Ratio Experiment Runner
 
-This script runs the airbench94.py training with different warmup ratios
-to test the hypothesis that reducing warmup can speed up training.
-
-Usage:
-    python run_experiments.py
+Runs airbench94.py with different warmup ratios.
 """
 
 import subprocess
@@ -18,9 +14,8 @@ WARMUP_RATIOS = [0.05, 0.10, 0.15, 0.20, 0.23, 0.30, 0.35]
 NUM_RUNS = 25  # Number of runs per variant
 
 def run_experiment(warmup_ratio, num_runs):
-    """Run airbench94.py with specified warmup ratio."""
     print(f"\n{'#'*70}")
-    print(f"# Running experiment with warmup_ratio = {warmup_ratio}")
+    print(f"# Running: warmup_ratio = {warmup_ratio}")
     print(f"{'#'*70}\n")
     
     cmd = [
@@ -66,3 +61,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

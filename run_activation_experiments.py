@@ -3,14 +3,7 @@
 ESE 3060 Final Project - Part 1
 Activation Function Ablation Experiments
 
-This script runs experiments comparing different activation functions:
-- GELU (baseline)
-- ReLU (ablation - cheapest but sharp gradients)
-- ReLU² (main experiment - cheap with smooth gradients)
-- Swish/SiLU (ablation - similar complexity to GELU)
-
-Usage:
-    python run_activation_experiments.py [--num_runs N]
+Runs experiments comparing GELU, ReLU, ReLU^2, and Swish.
 """
 
 import subprocess
@@ -30,9 +23,8 @@ ACTIVATIONS = [
 DEFAULT_NUM_RUNS = 25
 
 def run_experiment(activation, num_runs):
-    """Run experiment for a single activation function."""
     print(f"\n{'='*70}")
-    print(f"  RUNNING EXPERIMENT: {activation.upper()}")
+    print(f"  RUNNING: {activation.upper()}")
     print(f"  Runs: {num_runs}")
     print(f"{'='*70}\n")
     
@@ -93,3 +85,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
