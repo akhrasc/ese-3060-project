@@ -87,3 +87,33 @@ torchrun --standalone --nproc_per_node=8 train_gpt.py
 
 ### Reference
 Based on: [modded-nanogpt record number #5](https://github.com/KellerJordan/modded-nanogpt/blob/master/records/track_1_short/2024-10-14_ModernArch/dabaaddd-237c-4ec9-939d-6608a9ed5e27.txt)
+
+## Part 2: NanoGPT SwiGLU Optimization
+
+### Overview
+Investigation of Swish-Gated Linear Unit (SwiGLU) activation function in NanoGPT training.
+- **Hypothesis:** SwiGLU provides better sample efficiency than ReLU^2.
+- **Implementation:** `train_gpt_swiglu.py` (Iso-Parameter adjustment: hidden dim reduced to 2048).
+
+### Reproduction
+1. **Download Data** (if not already done):
+   ```bash
+   python cached_fineweb10B.py 9
+   ```
+
+2. **Run Baseline (ReLU^2):**
+   ```bash
+   torchrun --standalone --nproc_per_node=8 train_gpt.py
+   ```
+
+3. **Run Modification (SwiGLU):**
+   ```bash
+   torchrun --standalone --nproc_per_node=8 train_gpt_swiglu.py
+   ```
+
+4. **Analyze Results:**
+   Generates comparison plots from log files.
+   ```bash
+   python analyze_gpt_results.py
+   ```
+   *Note: Ensure log files are named correctly (e.g., `baseline_1.txt`, `swiglu_1.txt`) in the `logs/` directory before running analysis.*

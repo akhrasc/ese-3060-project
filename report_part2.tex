@@ -1,0 +1,72 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{float}
+
+\title{ESE 3060 Final Project -- Part 2\\
+\large Investigation of SwiGLU Activation Efficiency in NanoGPT Speedruns}
+\author{Chafic Akhras}
+\date{December 9, 2025}
+
+\begin{document}
+\maketitle
+
+\section{Introduction and Hypothesis}
+The default NanoGPT speedrun baseline utilizes a Squared ReLU ($\text{ReLU}^2$) activation function in its MLP blocks, a choice that balances computational efficiency with optimization speed. However, modern Large Language Models (LLMs) such as Llama 3, PaLM, and Mistral have standardized on Gated Linear Units, specifically SwiGLU (Swish-Gated Linear Unit), due to their superior sample efficiency and representation power.
+
+\textbf{Hypothesis:} I hypothesize that replacing the standard $\text{ReLU}^2$ MLP with a SwiGLU architecture will improve the sample efficiency (loss per step) of the NanoGPT model. I predict that the gating mechanism, which allows the model to dynamically filter information flow, will lead to faster convergence that outweighs the slight computational overhead of the additional linear projection.
+
+\section{Methodology}
+I modified the provided \texttt{train\_gpt.py} baseline (based on Modded-NanoGPT Record \#5) to implement the SwiGLU activation. To ensure a rigorous and fair comparison, I adhered to an "Iso-Parameter" constraint:
+\begin{itemize}
+    \item \textbf{Baseline:} Standard MLP with hidden dimension $4 \times d_{model}$ ($3072$). Parameters: $\sim 124$M.
+    \item \textbf{SwiGLU:} Gated MLP with 3 linear projections. To maintain the same parameter count, I reduced the hidden dimension to $\approx \frac{2}{3} \times 4d_{model}$ ($2048$).
+\end{itemize}
+
+Experiments were conducted on an 8x NVIDIA H100 GPU node. I performed 2 independent trials for each variant (Baseline vs. SwiGLU) to control for random initialization variance.
+
+\section{Results}
+The experimental results are summarized in Table \ref{tab:results} and Figure \ref{fig:loss}. Contrary to the hypothesis, the SwiGLU variant consistently underperformed the $\text{ReLU}^2$ baseline in this short-horizon training regime.
+
+\begin{table}[h]
+\centering
+\caption{Comparison of Final Validation Loss and Training Speed (5100 Steps)}
+\label{tab:results}
+\begin{tabular}{lcccc}
+\toprule
+Variant & Val Loss (Run 1) & Val Loss (Run 2) & \textbf{Mean Val Loss} & Mean Time (s) \\
+\midrule
+\textbf{Baseline ($\text{ReLU}^2$)} & 3.2927 & 3.2908 & \textbf{3.2918} & \textbf{813s} \\
+SwiGLU (Ours) & 3.3005 & 3.2995 & 3.3000 & 854s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+    \item \textbf{Accuracy:} The baseline achieved a slightly better (lower) validation loss ($\Delta \approx -0.008$). The difference was consistent across both runs, suggesting it is statistically real and not due to noise.
+    \item \textbf{Speed:} The SwiGLU model was approximately 5\% slower in wall-clock time (167ms/step vs. 160ms/step). This is expected due to the overhead of launching three separate kernels (Gate, Value, Output) compared to the two in the standard MLP, even with the reduced dimension size.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/gpt_comparison.png}
+\caption{Validation Loss curves for Baseline (Blue) vs. SwiGLU (Orange). The Baseline maintains a slight but consistent lead throughout the training run.}
+\label{fig:loss}
+\end{figure}
+
+\section{Discussion and Conclusion}
+While SwiGLU is the industry standard for training foundation models at scale (trillions of tokens), my results indicate it is \textbf{not optimal for the specific constraints of the NanoGPT Speedrun}.
+
+\textbf{Failure Analysis:}
+\begin{enumerate}
+    \item \textbf{Short Horizon Dynamics:} This speedrun trains for only 5100 steps. The $\text{ReLU}^2$ activation provides a sharper, more aggressive gradient signal that likely helps the model minimize loss rapidly in the early phase. SwiGLU's smoother gating property might require more steps to pay off in terms of "feature selection."
+    \item \textbf{Kernel Overhead:} On small models (124M) and relatively small batch sizes, the kernel launch overhead of the extra linear projection in SwiGLU becomes significant (5\% slowdown). In a "speedrun" where wall-clock time is the primary metric, this penalty is difficult to overcome without a massive drop in loss.
+\end{enumerate}
+
+\textbf{Novelty Statement:}
+I reviewed the Modded-NanoGPT speedrun records and confirmed that while various GLU variants have been tested, the specific comparison of Llama-3 style SwiGLU against the optimized $\text{ReLU}^2$ baseline in this exact codebase configuration had not been previously documented as a primary entry. This work provides empirical evidence that "modern" architectural choices are not always superior in highly constrained, short-duration optimization tasks.
+
+\end{document}
